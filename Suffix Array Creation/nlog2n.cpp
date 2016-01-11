@@ -28,20 +28,19 @@ typedef long long int ll;
 /*
  A suffix array is a sorted array of all suffixes of a given string.
  
- http://www.geeksforgeeks.org/suffix-array-set-1-introduction/
- naive approach
- find all the suffixes of a string
- and then sort them in ascending order to get the suffix array
+http://www.geeksforgeeks.org/suffix-array-set-2-a-nlognlogn-algorithm/
+ The naive approach has a high time complexity
  
- The time complexity of above method to build suffix array is O(n2Logn)
- if we consider a O(nLogn) algorithm used for sorting.
- The sorting step itself takes O(n2Logn) time as every comparison
- is a comparison of two strings and the comparison takes O(n) time.
+ It can be reduced to n logn * logn
  
- Addition: finds the length of the longest common prefix between the consecutive suffixes
- it is used to calculate the number of distinct substrings in an array
- https://greasepalm.wordpress.com/2012/07/01/suffix-arrays-a-simple-tutorial/
- nC2 - sum of length of all LCP
+ We first sort all suffixes according to first character, 
+ then according to first 2 characters, 
+ then first characters and so on while the number of characters 
+ to be considered is smaller than 2n. The important point is, 
+ if we have sorted suffixes according to first 2i characters, 
+ then we can sort suffixes according to first 2i+1 characters 
+ in O(nLogn) time using a nLogn sorting algorithm like Merge Sort. 
+ This is possible as two suffixes can be compared in O(1) time
  
  */
 typedef struct node{
@@ -62,6 +61,7 @@ vector<node> makeSuffixArray(string s){
     int len = s.length();
     vector<node> suffix;
 
+    //sort according to the first 2 characters of the suffixes
     for (int i=0;i<len;i++){
         node temp;
         temp.index = i;
@@ -71,22 +71,27 @@ vector<node> makeSuffixArray(string s){
     }
     sort(suffix.begin(),suffix.end(),compare);
     
+    // At his point, all suffixes are sorted according to first
+    // 2 characters.  Let us sort suffixes according to first 4
+    // characters, then first 8 and so on
     for(int k=4;k<2*len;k<<=1){
-        
-        for(int i=0;i<len;i++)
-            cout<<suffix[i].index<<" "<<suffix[i].rank<<" "<<suffix[i].nextRank<<endl;
-        cout<<endl;
         
         int previousRank = suffix[0].rank;
         int rank = 0;
         suffix[0].rank = rank;
+        //loop to update the ranks of the suffix
         for(int i=1;i<len;i++){
             previousRank = suffix[i].rank;
+            //if the current rank and nextRank is same as those of the previous suffix,
+            //the current rank will be same as the suffix
+            //else it will be one greater than the previous suffix's rank
             if(suffix[i].rank == previousRank && suffix[i].nextRank == suffix[i-1].nextRank)
                 suffix[i].rank = rank;
             else
                 suffix[i].rank = ++rank;
         }
+        //loop to update the nextRank of the suffixes
+        //for a suffix with index i, the nextRank will be the rank of the suffex with index i+k/2
         for(int i=0;i<len;i++){
             suffix[i].nextRank = suffix[i].index + k/2 >= len ? -1 : suffix[i+k/2].rank;
         }
