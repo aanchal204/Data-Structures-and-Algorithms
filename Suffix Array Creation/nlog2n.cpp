@@ -42,71 +42,62 @@ http://www.geeksforgeeks.org/suffix-array-set-2-a-nlognlogn-algorithm/
  in O(nLogn) time using a nLogn sorting algorithm like Merge Sort. 
  This is possible as two suffixes can be compared in O(1) time
  
+ https://github.com/pulkit110/Algorithms/blob/master/Spoj/Complete/DISUBSTR.cpp
+ 
  */
 typedef struct node{
     int index,rank,nextRank;
 }node;
 int compare(node a, node b){
-    if(a.rank < b.rank)
-        return 1;
-    if(a.rank > b.rank)
-        return 0;
-    if(a.nextRank < b.nextRank)
-        return 1;
-    if(a.nextRank > b.nextRank)
-        return 0;
-    return 0;
+    return (a.rank == b.rank) ? (a.nextRank < b.nextRank ? 1 : 0) : (a.rank < b.rank ? 1 : 0);
 }
 vector<node> makeSuffixArray(string s){
-    int len = s.length();
+    ll len = s.length();
     vector<node> suffix;
-
-    //sort according to the first 2 characters of the suffixes
-    for (int i=0;i<len;i++){
-        node temp;
-        temp.index = i;
-        temp.rank = s[i]-'a';
-        temp.nextRank = i+1>=len ? -1 : s[i+1]-'a';
-        suffix.push_back(temp);
-    }
-    sort(suffix.begin(),suffix.end(),compare);
+    int min = 256;
+    for(int i=0;i<len;i++)
+        min = min(min , s[i]);
     
-    // At his point, all suffixes are sorted according to first
-    // 2 characters.  Let us sort suffixes according to first 4
-    // characters, then first 8 and so on
-    for(int k=4;k<2*len;k<<=1){
-        
-        int previousRank = suffix[0].rank;
-        int rank = 0;
-        suffix[0].rank = rank;
-        //loop to update the ranks of the suffix
-        for(int i=1;i<len;i++){
-            previousRank = suffix[i].rank;
-            //if the current rank and nextRank is same as those of the previous suffix,
-            //the current rank will be same as the suffix
-            //else it will be one greater than the previous suffix's rank
-            if(suffix[i].rank == previousRank && suffix[i].nextRank == suffix[i-1].nextRank)
-                suffix[i].rank = rank;
-            else
-                suffix[i].rank = ++rank;
-        }
-        //loop to update the nextRank of the suffixes
-        //for a suffix with index i, the nextRank will be the rank of the suffex with index i+k/2
+    int pos[20][len+1];      //position matrix
+    //pos[i][j] = sorted index of the substring starting at the jth index and of length 2^i
+    
+    for(int i=0;i<len;i++)
+        pos[0][i] = s[i]-min;
+    
+    // Let us sort suffixes according to first 1
+    // character, then first 2, then first 4 and so on
+    for(int k = 1,step = 1;k<2*len;step++,k<<=1){
+        suffix.clear();
         for(int i=0;i<len;i++){
-            suffix[i].nextRank = suffix[i].index + k/2 >= len ? -1 : suffix[i+k/2].rank;
+            node temp;
+            temp.index = i;
+            temp.rank = pos[step-1][i];
+            //for a suffix with index i, the nextRank will be the rank of the suffix with index i+k
+            temp.nextRank = i+k < len ? pos[step-1][i+k] : -1;
+            suffix.push_back(temp);
         }
-        sort(suffix.begin(),suffix.end(),compare);
+        //for(int i=0;i<len;i++)
+        //  printf("%d %d %d\n",suffix[i].index,suffix[i].rank,suffix[i].nextRank);
+        sort(suffix.begin(), suffix.end(), compare);
+        //if the rank and nextRank of the current suffex and the previous suffix are the same, then the new rank of the current suffix will be same as that of the previous suffix
+        for(int i=0;i<len;i++){
+            pos[step][suffix[i].index] = (i>0 && suffix[i].rank == suffix[i-1].rank && suffix[i].nextRank == suffix[i-1].nextRank) ? (pos[step][suffix[i-1].index]) : (i);
+        }
     }
-    
     return suffix;
 }
-int main()
+int main(void)
 {
-    string s;
-    cin>>s;
-    vector<node>suffixArray;
-    suffixArray = makeSuffixArray(s);
-    for(int i=0;i<s.length();i++)
-        cout<<suffixArray[i].index<<" ";
+    int t;
+    cin>>t;
+    getchar();
+    while(t--){
+        string s;
+        getline(cin, s);
+        vector<node>suffixArray;
+        suffixArray = makeSuffixArray(s);
+        for(int i=0;i<suffixArray.size();i++)
+            printf("%d ",suffixArray[i].index);
+    }
     return 0;
 }
